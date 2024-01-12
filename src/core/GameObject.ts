@@ -2,7 +2,7 @@ import { Container, Ticker } from "pixi.js";
 import { Transform } from "./Transform";
 import { Vector2 } from "@math.gl/core";
 import EventEmitter from "eventemitter3";
-import { Props, setProps } from "./utils/setProps";
+import { setProps } from "./utils/setProps";
 export type Constructor<T = unknown> = new (...args: any[]) => T;
 
 export type ValueOf<T extends {} = {}> = T[keyof T];
@@ -194,8 +194,7 @@ export abstract class GameObject<T extends Container = Container> extends BaseGa
     start?(): void;
 
     getChildAt(index: number) {
-        if (index < 0 || index >= this.children.length)
-        {
+        if (index < 0 || index >= this.children.length) {
             throw new Error(`getChildAt: Index (${index}) does not exist.`);
         }
         return this.children[index];
@@ -235,7 +234,7 @@ export abstract class GameObject<T extends Container = Container> extends BaseGa
 
         this.emitter.emit(GameObject.Event.CHILD_ADDED, child);
         child.emitter.emit(GameObject.Event.ADDED, this);
-        
+
         return child;
     }
 
@@ -315,7 +314,7 @@ export abstract class GameObject<T extends Container = Container> extends BaseGa
 
     static async destroy(go: GameObject) {
         // console.log(go.children);
-        for (let i = go.children.length - 1; i >=0; i --) {
+        for (let i = go.children.length - 1; i >= 0; i--) {
             GameObject.destroy(go.children[i]);
         }
         go.parent?.removeChild(go);

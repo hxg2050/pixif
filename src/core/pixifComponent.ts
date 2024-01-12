@@ -108,6 +108,7 @@ export function getComponentInChildren<T extends Component>(node: GameObject, co
             return _component;
         }
     }
+    return;
 }
 
 // export function getComponentsInChildren<T extends Component>(node: DisplayObject, component: Constructor<T>): T[] {
