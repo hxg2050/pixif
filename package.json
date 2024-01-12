@@ -1,0 +1,17 @@
+{
+  "name": "pixif",
+  "version": "0.0.1",
+  "main": "index.js",
+  "repository": "https://github.com/hxg2050/pixif.git",
+  "author": "youxia <243802688@qq.com>",
+  "license": "MIT",
+  "scripts": {
+    "build": "rollup -c"
+  },
+  "devDependencies": {
+    "rollup": "^4.9.4"
+  },
+  "peerDependencies": {
+    "pixi.js": "^7.3.2"
+  }
+}
