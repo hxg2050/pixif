@@ -91,17 +91,17 @@ export class Transform {
     }
 
     get pivotX() {
-        return this.gameObject.display.transform.pivot.x;
+        return this.gameObject.display.pivot.x;
     }
     set pivotX(val: number) {
-        this.gameObject.display.transform.pivot.x = val;
+        this.gameObject.display.pivot.x = val;
     }
 
     get pivotY() {
-        return this.gameObject.display.transform.pivot.y;
+        return this.gameObject.display.pivot.y;
     }
     set pivotY(val: number) {
-        this.gameObject.display.transform.pivot.y = val;
+        this.gameObject.display.pivot.y = val;
     }
     // this.label.display.transform.pivot.set(-50, 0);
 
