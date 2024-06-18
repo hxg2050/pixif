@@ -302,9 +302,12 @@ export abstract class GameObject<T extends Container = Container> extends BaseGa
         parent?.addChild(go);
 
         if (go.update) {
-            Ticker.shared.add(go.update, go);
+            const update = (ticker: Ticker) => {
+                go.update?.(ticker.deltaTime);
+            }
+            Ticker.shared.add(update);
             go.display.once('destroyed', () => {
-                Ticker.shared.remove(go.update!, go);
+                Ticker.shared.remove(update);
             });
         }
 

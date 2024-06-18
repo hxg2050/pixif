@@ -2,11 +2,42 @@ import { GameObject, Component } from "pixif";
 
 export class GridLayout extends Component {
 
-    row = 1;
+    /**
+     * 行数
+     */
+    private _row = 1;
+    get row() {
+        return this._row;
+    }
+    set row(val: number) {
+        if (this._row === val) {
+            return;
+        }
+        this._row = val;
+        this._resize();
+
+    }
+    /**
+     * 列数
+     */
+    col = 1;
+
+    /**
+     * 宽度
+     */
     gridWidth = 1;
+    /**
+     * 高度
+     */
     gridHeight = 1;
 
+    /**
+     * 行间距
+     */
     gapVertical = 0;
+    /**
+     * 列间距
+     */
     gapHorizontal = 0;
 
     private _refresh = true
@@ -52,7 +83,7 @@ export class GridLayout extends Component {
         // }
     }
 
-    update(dt: number): void {
+    update(): void {
         if (!this._refresh) {
             return;
         }
