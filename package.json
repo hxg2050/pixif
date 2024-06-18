@@ -23,11 +23,9 @@
     "tslib": "^2.6.2",
     "typescript": "^5.3.3"
   },
-  "peerDependencies": {
-    "pixi.js": "^8.1.0"
-  },
   "dependencies": {
     "@math.gl/core": "^4.0.1",
-    "eventemitter3": "^5.0.1"
+    "eventemitter3": "^5.0.1",
+    "pixi.js": "^8.1.8"
   }
 }
