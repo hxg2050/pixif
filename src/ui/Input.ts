@@ -119,6 +119,7 @@ export class Input extends Group {
         this.display.addChild(mask);
         this._mask = mask;
         this.createElement();
+        this.element.setAttribute('type', 'text');
         this.element.className = 'textarea'
         this.element.style.display = 'none';
         this.element.onfocus = this.onFocus.bind(this);
