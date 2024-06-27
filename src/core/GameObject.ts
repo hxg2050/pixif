@@ -3,6 +3,7 @@ import { Transform } from "./Transform";
 import { Vector2 } from "@math.gl/core";
 import EventEmitter from "eventemitter3";
 import { setProps } from "./utils/setProps";
+import { Component, addComponent, getComponent, getComponents } from "./pixifComponent";
 export type Constructor<T = unknown> = new (...args: any[]) => T;
 
 export type ValueOf<T extends {} = {}> = T[keyof T];
@@ -278,6 +279,18 @@ export abstract class GameObject<T extends Container = Container> extends BaseGa
         this.removeChildren();
     }
 
+    addComponent<T extends Component>(component: Constructor<T>, props?: Partial<T>): T {
+        return addComponent(this, component, props)
+    }
+
+    getComponent<T extends Component>(component: Constructor<T>): T | undefined {
+        return getComponent(this, component);
+    }
+
+    getComponents<T extends Component>(component: Constructor<T>): T[] | undefined {
+        return getComponents(this, component);
+    }
+    
     private setDisplay(display: T) {
         this.display = display;
         this.start && this.display.once('added', this.start, this);
