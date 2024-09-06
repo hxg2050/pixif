@@ -59,7 +59,7 @@ export class Image extends Group {
     }
 
     resize() {
-        this.width = this.display.texture.baseTexture.width;
-        this.height = this.display.texture.baseTexture.height;
+        this.width = this.display.texture.width;
+        this.height = this.display.texture.height;
     }
 }

@@ -1,9 +1,7 @@
 {
   "name": "pixif",
-  "version": "0.0.2",
-  "main": "./dist/index.cjs.js",
-  "module": "./dist/index.esm.js",
-  "types": "./dist/index.d.ts",
+  "version": "0.0.3",
+  "main": "./src/index.ts",
   "type": "module",
   "files": [
     "dist/"
@@ -14,13 +12,22 @@
   "scripts": {
     "build": "rollup -c"
   },
+  "publishConfig": {
+    "main": "./dist/index.cjs",
+    "module": "./dist/index.mjs",
+    "types": "./dist/index.d.ts"
+  },
   "devDependencies": {
     "@rollup/plugin-typescript": "^11.1.6",
     "rollup": "^4.9.4",
     "tslib": "^2.6.2",
     "typescript": "^5.3.3"
   },
+  "dependencies": {
+    "@math.gl/core": "^4.0.1",
+    "eventemitter3": "^5.0.1"
+  },
   "peerDependencies": {
-    "pixi.js": "^7.3.2"
+    "pixi.js": ">=8.3.0"
   }
 }

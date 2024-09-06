@@ -1,7 +1,7 @@
-import { BaseTexture, NineSlicePlane, Texture } from "pixi.js";
+import { NineSliceSprite, Texture } from "pixi.js";
 import { GameObject } from "../GameObject";
 
-export class NineSliceImage extends GameObject<NineSlicePlane> {
+export class NineSliceImage extends GameObject<NineSliceSprite> {
     /**
      * 背景纹理
      */
@@ -13,8 +13,8 @@ export class NineSliceImage extends GameObject<NineSlicePlane> {
     }
 
     async render() {
-        const texture = new Texture(new BaseTexture());
-        this.display = new NineSlicePlane(texture);
+        const texture = new Texture();
+        this.display = new NineSliceSprite(texture);
     }
 
     async resize() {
