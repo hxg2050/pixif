@@ -1,5 +1,5 @@
 import { GameObject } from "../GameObject";
-import {ColorSource, Graphics as PIXIGraphics, StrokeInput} from 'pixi.js'
+import { FillInput, Graphics as PIXIGraphics, StrokeInput } from 'pixi.js'
 
 export class Graphics extends GameObject<PIXIGraphics> {
     public display = new PIXIGraphics();
@@ -38,7 +38,7 @@ export class Graphics extends GameObject<PIXIGraphics> {
         return this;
     }
 
-    public fill(style?: StrokeInput) {
+    public fill(style?: FillInput) {
         this.display.fill(style)
         return this;
     }
