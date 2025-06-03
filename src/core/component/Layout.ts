@@ -1,6 +1,6 @@
 import { Vector2 } from "@math.gl/core";
-import { Component } from "../pixifComponent";
 import { GameObject } from "../GameObject";
+import { Component } from "./Component";
 
 /**
  * 控制布局

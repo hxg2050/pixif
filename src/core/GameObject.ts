@@ -3,8 +3,8 @@ import { Transform } from "./Transform";
 import { Vector2 } from "@math.gl/core";
 import EventEmitter from "eventemitter3";
 import { setProps } from "./utils/setProps";
-import { Component, addComponent, getComponent, getComponents } from "./pixifComponent";
 import { Group } from "./group";
+import { Component } from "./component/Component";
 export type Constructor<T = unknown> = new (...args: any[]) => T;
 
 export type ValueOf<T extends {} = {}> = T[keyof T];
@@ -79,7 +79,9 @@ export abstract class GameObject<T extends Container = Container> extends BaseGa
 
     public transform: Transform = new Transform(this);
 
-    parent?: GameObject;
+    parent?: Group;
+
+    public components: Component[] = [];
 
     children: GameObject[] = [];
 
@@ -197,15 +199,33 @@ export abstract class GameObject<T extends Container = Container> extends BaseGa
     start?(): void;
 
     addComponent<T extends Component>(component: Constructor<T>, props?: Partial<T>): T {
-        return addComponent(this, component, props)
+        const _component = new component(this);
+        this.components.push(_component);
+    
+        _component.awake && _component.awake();
+        _component.start && this.emitter.once(GameObject.Event.TICKER_BEFORE, _component.start, _component);
+        _component.update && this.emitter.on(GameObject.Event.TICKER_BEFORE, _component.update, _component);
+        props && setProps(_component, props);
+        
+        return _component;
+    }
+
+    removeComponent<T extends Component>(component: T): T | undefined {
+        const index = this.components.indexOf(component);
+        if (index == -1) {
+            return;
+        }
+        this.components.splice(index, 1);
+        component.onDestroy && component.onDestroy();
+        return component;
     }
 
     getComponent<T extends Component>(component: Constructor<T>): T | undefined {
-        return getComponent(this, component);
+        return this.components.find(val => val instanceof component) as T;
     }
 
     getComponents<T extends Component>(component: Constructor<T>): T[] | undefined {
-        return getComponents(this, component);
+        return this.components.filter(val => val instanceof component) as T[];
     }
     
     private setDisplay(display: T) {
@@ -233,7 +253,9 @@ export abstract class GameObject<T extends Container = Container> extends BaseGa
 
         if (go.update) {
             const update = (ticker: Ticker) => {
+                go.emitter.emit(GameObject.Event.TICKER_BEFORE, ticker);
                 go.update?.(ticker.deltaTime);
+                go.emitter.emit(GameObject.Event.TICKER_AFTER, ticker);
             }
             Ticker.shared.add(update);
             go.display.once('destroyed', () => {

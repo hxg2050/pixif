@@ -1,4 +1,4 @@
-import { Component } from "../pixifComponent";
+import { Component } from "./Component";
 
 export class Flex extends Component {
     private _grow = 1;

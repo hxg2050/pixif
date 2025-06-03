@@ -1,6 +1,7 @@
-import { GameObject, Component } from "pixif";
+import { GameObject, Group } from "pixif";
+import { Component } from "./Component";
 
-export class GridLayout extends Component {
+export class GridLayout extends Component<Group> {
 
     /**
      * 行数

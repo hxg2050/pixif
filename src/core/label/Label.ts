@@ -1,8 +1,8 @@
 import { Text } from "pixi.js";
 import { LabelStyle } from "./LabelStyle";
-import { Group } from "../group";
+import { GameObject } from "../GameObject";
 
-export class Label extends Group {
+export class Label extends GameObject {
     display = new Text();
 
 

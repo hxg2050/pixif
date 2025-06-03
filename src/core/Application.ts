@@ -1,5 +1,5 @@
 import * as PIXI from 'pixi.js';
-import { Group, registerComponent } from './';
+import { Group } from './';
 export class Application extends PIXI.Application {
     root!: Group;
 
@@ -10,6 +10,5 @@ export class Application extends PIXI.Application {
         this.root.display = this.stage;
         this.root.width = this.screen.width
         this.root.height = this.screen.height;
-        registerComponent(this.ticker)
     }
 }

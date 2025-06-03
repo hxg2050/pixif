@@ -1,6 +1,6 @@
-import { GameObject } from "../GameObject";
-import { Component } from "../pixifComponent";
+import { GameObject, Group } from "pixif";
 import { onlyOnceQueueMicrotask } from "../utils/onlyOnceQueueMicrotask";
+import { Component } from "./Component";
 import { Flex } from "./Flex";
 
 
@@ -8,7 +8,7 @@ export enum FlexDirection {
     ROW,
     COLUMN
 }
-export class FlexGroup extends Component {
+export class FlexGroup extends Component<Group> {
     direction: FlexDirection = FlexDirection.ROW;
     gap = 0;
 
