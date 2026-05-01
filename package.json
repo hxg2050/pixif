@@ -1,26 +1,66 @@
 {
   "name": "pixif",
-  "version": "0.0.2",
-  "main": "./dist/index.cjs.js",
-  "module": "./dist/index.esm.js",
+  "version": "0.1.0",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
   "type": "module",
   "files": [
-    "dist/"
+    "dist/",
+    "skills/",
+    "scripts/install-skills.mjs"
   ],
+  "bin": {
+    "pixif-skills": "./scripts/install-skills.mjs"
+  },
   "repository": "https://github.com/hxg2050/pixif.git",
   "author": "youxia <243802688@qq.com>",
   "license": "MIT",
   "scripts": {
-    "build": "rollup -c"
+    "build": "rollup -c",
+    "example": "vite examples/basic",
+    "example:build": "vite build examples/basic",
+    "skills:install": "node scripts/install-skills.mjs --replace",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "publishConfig": {
+    "main": "./dist/index.cjs",
+    "module": "./dist/index.mjs",
+    "types": "./dist/index.d.ts"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
+    },
+    "./core": {
+      "types": "./dist/core/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
+    },
+    "./ui": {
+      "types": "./dist/ui/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
+    }
   },
   "devDependencies": {
     "@rollup/plugin-typescript": "^11.1.6",
+    "happy-dom": "^20.9.0",
+    "pixi.js": "8.18.1",
     "rollup": "^4.9.4",
     "tslib": "^2.6.2",
-    "typescript": "^5.3.3"
+    "typescript": "^5.3.3",
+    "vite": "^8.0.10",
+    "vitest": "^4.1.5"
+  },
+  "dependencies": {
+    "@math.gl/core": "^4.0.1",
+    "eventemitter3": "^5.0.1"
   },
   "peerDependencies": {
-    "pixi.js": "^7.3.2"
+    "pixi.js": ">=8.3.0"
   }
 }

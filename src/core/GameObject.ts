@@ -1,13 +1,143 @@
-import { Container, Ticker } from "pixi.js";
+import { Container } from "pixi.js";
 import { Transform } from "./Transform";
 import { Vector2 } from "@math.gl/core";
 import EventEmitter from "eventemitter3";
 import { setProps } from "./utils/setProps";
+import { Component } from "./component/Component";
+import type { Group } from "./group";
+import type { Application } from "./Application";
 export type Constructor<T = unknown> = new (...args: any[]) => T;
 
-export type ValueOf<T extends {} = {}> = T[keyof T];
+export const GameObjectEvent = {
+    /**
+     * 当添加到显示舞台时
+     */
+    ADDED: 'added',
+    /**
+     * 当添加新的子节点时
+     */
+    CHILD_ADDED: 'childAdded',
 
-export type GameObjectEvent = ValueOf<typeof GameObject.Event>;
+    /**
+     * 移除时
+     */
+    REMOVED: 'removed',
+
+    /**
+     * 移除子元素时
+     */
+    CHILD_REMOVED: 'childRemoved',
+
+    /**
+     * 尺寸发生变化时
+     */
+    RESIZE: 'resize',
+    /**
+     * 位置发生变化
+     */
+    REPOSITION: 'reposition',
+
+    /**
+     * 帧刷新前
+     */
+    TICKER_BEFORE: 'tickerBefore',
+
+    /**
+     * 帧刷新后
+     */
+    TICKER_AFTER: 'tickerAfter'
+} as const;
+
+export interface GameObjectEventMap {
+    [event: string]: any[];
+    [GameObjectEvent.ADDED]: [parent: Group];
+    [GameObjectEvent.CHILD_ADDED]: [child: GameObject];
+    [GameObjectEvent.REMOVED]: [parent: Group];
+    [GameObjectEvent.CHILD_REMOVED]: [child: GameObject];
+    [GameObjectEvent.RESIZE]: [];
+    [GameObjectEvent.REPOSITION]: [];
+    [GameObjectEvent.TICKER_BEFORE]: [dt: number];
+    [GameObjectEvent.TICKER_AFTER]: [dt: number];
+}
+
+function hasChildren(go: GameObject): go is GameObject & { children: GameObject[] } {
+    return 'children' in go && Array.isArray(go.children);
+}
+
+class GameObjectEmitter extends EventEmitter<GameObjectEventMap> {
+    constructor(private gameObject: GameObject) {
+        super();
+    }
+
+    private syncUpdateRegistration() {
+        this.gameObject.syncUpdateRegistration();
+    }
+
+    override on<T extends EventEmitter.EventNames<GameObjectEventMap>>(
+        event: T,
+        fn: EventEmitter.EventListener<GameObjectEventMap, T>,
+        context?: unknown,
+    ) {
+        super.on(event, fn, context);
+        this.syncUpdateRegistration();
+        return this;
+    }
+
+    override addListener<T extends EventEmitter.EventNames<GameObjectEventMap>>(
+        event: T,
+        fn: EventEmitter.EventListener<GameObjectEventMap, T>,
+        context?: unknown,
+    ) {
+        return this.on(event, fn, context);
+    }
+
+    override once<T extends EventEmitter.EventNames<GameObjectEventMap>>(
+        event: T,
+        fn: EventEmitter.EventListener<GameObjectEventMap, T>,
+        context?: unknown,
+    ) {
+        super.once(event, fn, context);
+        this.syncUpdateRegistration();
+        return this;
+    }
+
+    override off<T extends EventEmitter.EventNames<GameObjectEventMap>>(
+        event: T,
+        fn?: EventEmitter.EventListener<GameObjectEventMap, T>,
+        context?: unknown,
+        once?: boolean,
+    ) {
+        super.off(event, fn, context, once);
+        this.syncUpdateRegistration();
+        return this;
+    }
+
+    override removeListener<T extends EventEmitter.EventNames<GameObjectEventMap>>(
+        event: T,
+        fn?: EventEmitter.EventListener<GameObjectEventMap, T>,
+        context?: unknown,
+        once?: boolean,
+    ) {
+        return this.off(event, fn, context, once);
+    }
+
+    override removeAllListeners(event?: EventEmitter.EventNames<GameObjectEventMap>) {
+        super.removeAllListeners(event);
+        this.syncUpdateRegistration();
+        return this;
+    }
+
+    override emit<T extends EventEmitter.EventNames<GameObjectEventMap>>(
+        event: T,
+        ...args: EventEmitter.EventArgs<GameObjectEventMap, T>
+    ) {
+        const result = super.emit(event, ...args);
+        if (event === GameObject.Event.TICKER_BEFORE || event === GameObject.Event.TICKER_AFTER) {
+            this.syncUpdateRegistration();
+        }
+        return result;
+    }
+}
 
 export abstract class BaseGameObject<T extends Container> {
     public abstract display: T;
@@ -31,55 +161,19 @@ export abstract class BaseGameObject<T extends Container> {
 
 export abstract class GameObject<T extends Container = Container> extends BaseGameObject<T> {
 
-    static Event = {
-        /**
-         * 当添加到显示舞台时
-         */
-        ADDED: 'ADDED',
-        /**
-         * 当添加新的字节点时
-         */
-        CHILD_ADDED: 'CHILD_ADDED',
+    static Event = GameObjectEvent;
 
-        /**
-         * 移除时
-         */
-        REMOVED: 'REMOVED',
-
-        /**
-         * 移除子元素时
-         */
-        CHILD_REMOVED: 'CHILD_REMOVED',
-
-        /**
-         * 尺寸发生变化时
-         */
-        RESIZE: 'RESIZE',
-        /**
-         * 位置发生变化
-         */
-        REPOSITION: 'REPOSITION',
-
-        /**
-         * 帧刷新前
-         */
-        TICKER_BEFORE: 'TICKER_BEFORE',
-
-        /**
-         * 帧刷新后
-         */
-        TICKER_AFTER: 'TICKER_AFTER'
-    }
-
-    public emitter = new EventEmitter<GameObjectEvent>();
+    public emitter = new GameObjectEmitter(this);
 
     public display!: T;
 
     public transform: Transform = new Transform(this);
+    public app?: Application;
 
-    parent?: GameObject;
+    parent?: Group;
 
-    children: GameObject[] = [];
+    public components: Component[] = [];
+    private _destroying = false;
 
     get visible() {
         return this.display.visible;
@@ -193,100 +287,104 @@ export abstract class GameObject<T extends Container = Container> extends BaseGa
 
     start?(): void;
 
-    getChildAt(index: number) {
-        if (index < 0 || index >= this.children.length) {
-            throw new Error(`getChildAt: Index (${index}) does not exist.`);
-        }
-        return this.children[index];
+    public hasUpdateWork() {
+        return !!this.update
+            || this.emitter.listenerCount(GameObject.Event.TICKER_BEFORE) > 0
+            || this.emitter.listenerCount(GameObject.Event.TICKER_AFTER) > 0;
     }
 
-    /**
-     * 插入一个子节点
-     * @param transform - 待插入的节点
-     */
-    addChild(child: GameObject) {
-        if (child.parent) {
-            child.parent.removeChild(child);
+    public syncUpdateRegistration() {
+        if (this._destroying || !this.app) {
+            return;
         }
-        this.children.push(child);
-        child.parent = this;
-        this.display.addChild(child.display);
 
-        this.emitter.emit(GameObject.Event.CHILD_ADDED, child);
-        child.emitter.emit(GameObject.Event.ADDED, this);
-
-        return child;
+        if (this.hasUpdateWork()) {
+            this.app.registerUpdateTarget(this);
+        } else {
+            this.app.unregisterUpdateTarget(this);
+        }
     }
 
-    /**
-     * 在指定位置插入节点
-     * @param child - 待插入的节点
-     * @param index - 要插入的位置
-     */
-    addChildAt(child: GameObject, index: number) {
-        if (child.parent) {
-            child.parent.removeChild(child);
+    public setApplication(app?: Application) {
+        if (this.app === app) {
+            return;
         }
-        this.children.splice(index, 0, child);
-        child.parent = this;
-        this.display.addChildAt(child.display, index);
 
+        const previousApp = this.app;
+        this.app = app;
 
-        this.emitter.emit(GameObject.Event.CHILD_ADDED, child);
-        child.emitter.emit(GameObject.Event.ADDED, this);
+        if (previousApp) {
+            previousApp.unregisterUpdateTarget(this);
+        }
 
-        return child;
+        if (hasChildren(this)) {
+            for (const child of this.children) {
+                child.setApplication(app);
+            }
+        }
+
+        if (app && this.hasUpdateWork()) {
+            app.registerUpdateTarget(this);
+        }
     }
 
-    /**
-     * 移除一个节点
-     * @param transform - 将要移除的节点
-     */
-    removeChild(child: GameObject) {
-        let index = this.children.indexOf(child);
+    addComponent<T extends Component>(component: Constructor<T>, props?: Partial<T>): T {
+        const _component = new component(this);
+        this.components.push(_component);
+    
+        props && setProps(_component, props);
+        _component.awake && _component.awake();
+
+        _component.start && _component.start();
+        _component.update && this.emitter.on(GameObject.Event.TICKER_BEFORE, _component.update, _component);
+        this.syncUpdateRegistration();
+        
+        return _component;
+    }
+
+    removeComponent<T extends Component>(component: T): T | undefined {
+        const index = this.components.indexOf(component);
         if (index == -1) {
             return;
         }
-
-        this.removeChildAt(index);
+        this.components.splice(index, 1);
+        component.update && this.emitter.off(GameObject.Event.TICKER_BEFORE, component.update, component);
+        component.gameObject.display.off('destroyed', component.destroy, component);
+        component.onDestroy && component.onDestroy();
+        this.syncUpdateRegistration();
+        return component;
     }
 
-    /**
-     * 移除一个指定位置的元素
-     * @param index - 要移除节点的位置
-     */
-    removeChildAt(index: number) {
-        const node = this.children.splice(index, 1)[0];
-        node.parent = undefined;
-        node.display.parent.removeChildAt(index);
-
-        this.emitter.emit(GameObject.Event.CHILD_REMOVED, node);
-        node.emitter.emit(GameObject.Event.REMOVED, this);
-
-        return node;
+    getComponent<T extends Component>(component: Constructor<T>): T | undefined {
+        return this.components.find(val => val instanceof component) as T;
     }
 
-    /**
-     * 移除所有子元素
-     */
-    removeChildren() {
-        if (this.children.length == 0) {
-            this.display.removeChildren();
-            return;
-        }
-        this.removeChildAt(0);
-        this.removeChildren();
+    getComponents<T extends Component>(component: Constructor<T>): T[] | undefined {
+        return this.components.filter(val => val instanceof component) as T[];
     }
-
+    
     private setDisplay(display: T) {
         this.display = display;
-        this.start && this.display.once('added', this.start, this);
-        // this.onDestroy && this.display.once('destroyed', this.onDestroy);
+        if (this.start) {
+            if (this.display.parent) {
+                this.start.call(this);
+            } else {
+                this.display.once('added', this.start, this);
+            }
+        }
+
+        this.display.once('destroyed', () => {
+            this._destroying = true;
+            this.setApplication(undefined);
+            queueMicrotask(() => {
+                this.emitter.removeAllListeners();
+            });
+        });
     }
 
     public update?(dt: number): void;
 
-    public async render?(): Promise<void>;
+    public render?(): void;
 
     public onDestroy?(): void;
 
@@ -295,30 +393,28 @@ export abstract class GameObject<T extends Container = Container> extends BaseGa
     //     this.onDestroy && this.onDestroy();
     // }
 
-    static async instantiate<T extends GameObject = GameObject>(gameObject: Constructor<T>, parent?: GameObject, props?: Partial<T>): Promise<T> {
+    static instantiate<T extends GameObject = GameObject>(gameObject: Constructor<T>, parent?: Group, props?: Partial<T>): T {
         const go = new gameObject();
-        await go.render?.();
+        go.render?.();
+        props && setProps(go, props);
         go.setDisplay(go.display);
         parent?.addChild(go);
 
-        if (go.update) {
-            Ticker.shared.add(go.update, go);
-            go.display.once('destroyed', () => {
-                Ticker.shared.remove(go.update!, go);
-            });
-        }
-
-        props && setProps(go, props);
         return go;
     }
 
     static async destroy(go: GameObject) {
-        // console.log(go.children);
-        for (let i = go.children.length - 1; i >= 0; i--) {
-            GameObject.destroy(go.children[i]);
+        go._destroying = true;
+        go.setApplication(undefined);
+        if (hasChildren(go)) {
+            for (let i = go.children.length - 1; i >= 0; i--) {
+                GameObject.destroy(go.children[i]);
+            }
         }
         go.parent?.removeChild(go);
         go.onDestroy && go.onDestroy();
         go.display.destroy();
+        go.emitter.removeAllListeners();
+        go.components.length = 0;
     }
 }

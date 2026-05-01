@@ -1,9 +1,10 @@
 import { Sprite, Texture } from "pixi.js";
 import { GameObject } from "../GameObject";
-import { Group } from "../group";
 
-export class Image extends Group {
+export class Image extends GameObject<Sprite> {
     display = new Sprite();
+    protected _width: number = 0;
+    protected _height: number = 0;
 
     /**
      * 这两个参数主要用于解决从来没有执行过resize或没有宽高进行赋值的情况下，使用默认纹理的宽高进行配置
@@ -20,8 +21,7 @@ export class Image extends Group {
     set width(val: number) {
         this._width = val;
         this._isSetWidth = true;
-        this._isSetWidth = true;
-        this.display.texture.orig.width = val;
+        this.display.width = val;
         this.refreshPivot();
         this.emitter.emit(GameObject.Event.RESIZE);
     }
@@ -36,7 +36,7 @@ export class Image extends Group {
     set height(val: number) {
         this._height = val;
         this._isSetHeight = true;
-        this.display.texture.orig.height = val;
+        this.display.height = val;
         this.refreshPivot();
         this.emitter.emit(GameObject.Event.RESIZE);
     }
@@ -47,19 +47,19 @@ export class Image extends Group {
     set texture(tex: Texture) {
         this.display.texture = tex;
         if (this._isSetWidth) {
-            this.display.texture.orig.width = this.width;
+            this.display.width = this.width;
         } else {
-            this._width = this.display.texture.orig.width;
+            this._width = this.display.width;
         }
         if (this._isSetHeight) {
-            this.display.texture.orig.height = this.height;
+            this.display.height = this.height;
         } else {
-            this._height = this.display.texture.orig.height;
+            this._height = this.display.height;
         }
     }
 
     resize() {
-        this.width = this.display.texture.baseTexture.width;
-        this.height = this.display.texture.baseTexture.height;
+        this.width = this.display.texture.width;
+        this.height = this.display.texture.height;
     }
 }

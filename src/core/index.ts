@@ -6,6 +6,5 @@ export * from './graphics'
 export * from './Application'
 
 export * from './component';
-export * from './pixifComponent';
 
 export * from './utils'

@@ -1,5 +1,5 @@
 import { Vector2 } from '@math.gl/core'
-import { GameObject } from './GameObject';
+import type { GameObject } from './GameObject';
 export class Transform {
     // x: number;
     // y: number;
@@ -17,24 +17,39 @@ export class Transform {
         return this._position;
     }
     set position(val: Vector2) {
-        this.x = val.x;
-        this.y = val.y;
+        this.setPosition(val.x, val.y);
     }
 
     get x() {
         return this.position.x;
     }
     set x(val: number) {
-        this.position.x = val;
-        this.gameObject.display.x = val;
+        this.setPosition(val, this.position.y);
     }
 
     get y() {
         return this.position.y;
     }
     set y(val: number) {
-        this.position.y = val;
-        this.gameObject.display.y = val;
+        this.setPosition(this.position.x, val);
+    }
+
+    public setPosition(x: number, y: number) {
+        const displayPosition = this.gameObject.display?.position;
+        const isPositionChanged = this.position.x !== x || this.position.y !== y;
+        const isDisplayPositionChanged = displayPosition
+            ? displayPosition.x !== x || displayPosition.y !== y
+            : false;
+
+        if (!isPositionChanged && !isDisplayPositionChanged) {
+            return;
+        }
+
+        this.position.set(x, y);
+        if (displayPosition) {
+            displayPosition.set(x, y);
+        }
+        this.gameObject.emitter.emit('reposition');
     }
 
     // private _size = new Vector2();
@@ -91,17 +106,17 @@ export class Transform {
     }
 
     get pivotX() {
-        return this.gameObject.display.transform.pivot.x;
+        return this.gameObject.display.pivot.x;
     }
     set pivotX(val: number) {
-        this.gameObject.display.transform.pivot.x = val;
+        this.gameObject.display.pivot.x = val;
     }
 
     get pivotY() {
-        return this.gameObject.display.transform.pivot.y;
+        return this.gameObject.display.pivot.y;
     }
     set pivotY(val: number) {
-        this.gameObject.display.transform.pivot.y = val;
+        this.gameObject.display.pivot.y = val;
     }
     // this.label.display.transform.pivot.set(-50, 0);
 
