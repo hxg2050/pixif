@@ -13,7 +13,7 @@ pixif 是一个基于 PixiJS v8 的轻量 TypeScript 封装，目标是为 Pixi 
 - 使用 `Group` 作为唯一容器节点，叶子节点不再承担子节点管理职责。
 - `Application` 统一驱动需要更新的对象和组件，避免每个对象直接注册全局 ticker。
 - 提供 `Layout`、`GridLayout`、`FlexGroup` 等布局能力。
-- 提供 `Input`、`Textarea` 这类 DOM-backed 输入组件，方便在 Pixi 场景中处理真实文本输入。
+- 提供 `Button`、`ScrollView`、`Input`、`Textarea` 等 UI 组件。
 - 提供 Rollup 构建、Vitest 测试和 Vite 示例。
 
 ## 安装
@@ -116,6 +116,27 @@ const group = GameObject.instantiate(Group, app.root, {
 
 `Graphics`、`Label`、`Image`、`NineSliceImage` 等是叶子节点，负责具体渲染，不提供子节点管理能力。
 
+复杂 UI 可以写成 `Group` 子类，并在 `render()` 中组装内部子树。`GameObject.instantiate()` 会先应用传入 props，再调用 `render()`，因此内部结构可以读取初始化参数：
+
+```ts
+class UserCard extends Group {
+    title = '';
+    titleLabel!: Label;
+
+    render() {
+        this.titleLabel = GameObject.instantiate(Label, this, {
+            value: this.title,
+        });
+    }
+}
+
+const card = GameObject.instantiate(UserCard, stage, {
+    title: 'pixif',
+    width: 240,
+    height: 80,
+});
+```
+
 ### Component
 
 组件可以挂载到 `GameObject` 上：
@@ -134,7 +155,7 @@ class Spinner extends Component<Group> {
 group.addComponent(Spinner);
 ```
 
-组件的 `update()` 会在对象挂载到 `Application.root` 后由 `app.ticker` 统一驱动。
+组件的 `start()` 会在首次 `update()` 前执行一次；`update()` 会在对象挂载到 `Application.root` 后由 `app.ticker` 统一驱动。
 
 ## 布局
 
@@ -178,7 +199,29 @@ grid.addComponent(GridLayout, {
 
 `FlexGroup` 用于弹性排列子节点，适合横向或纵向列表。
 
-## UI 输入组件
+## UI 组件
+
+### Button
+
+`Button` 是一个可交互按钮，支持文字、默认图形背景、可选九宫格纹理、禁用状态和按压缩放反馈：
+
+```ts
+const button = GameObject.instantiate(Button, panel, {
+    x: 24,
+    y: 150,
+    width: 130,
+    height: 42,
+    value: 'Confirm',
+});
+
+button.emitter.on('tap', () => {
+    console.log('clicked');
+});
+```
+
+按压缩放只作用于按钮内部视觉容器，按钮自身的布局尺寸和命中区域保持不变。
+
+### Input / Textarea
 
 `Input` 和 `Textarea` 使用真实 HTML 元素承载输入，再把 DOM 元素同步到 Pixi canvas 的位置上。
 
@@ -200,6 +243,25 @@ input.value = 'pixif';
 - 如页面中存在多个 canvas，可通过 `canvas` 属性指定。
 - DOM 输入组件会监听窗口 resize 和 scroll 来刷新位置。
 - 当前实现保留自维护 DOM overlay，没有迁移到 PixiJS v8 experimental `DOMContainer`。
+
+### ScrollView
+
+`ScrollView` 是一个可滚动容器，内部暴露 `content` 节点用于挂载内容：
+
+```ts
+const scroll = GameObject.instantiate(ScrollView, stage, {
+    width: 720,
+    height: 480,
+});
+
+GameObject.instantiate(Label, scroll.content, {
+    value: 'Scrollable content',
+});
+
+scroll.refreshContentHeight();
+```
+
+支持滚轮和拖拽滚动，并提供 `scrollY`、`maxScrollY`、`scrollTo()`、`scrollBy()`、`refreshContentHeight()`。
 
 ## 示例
 
@@ -291,7 +353,7 @@ pnpm example:build
 
 ```ts
 import { Application, GameObject, Group } from 'pixif';
-import { Input, Textarea } from 'pixif/ui';
+import { Button, Input, ScrollView, Textarea } from 'pixif/ui';
 import { Layout, GridLayout } from 'pixif/core';
 ```
 
